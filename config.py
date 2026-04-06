@@ -26,7 +26,11 @@ class Config:
 
     # Kích thước
     INTERSECTION_SIZE = 70
-    LANE_WIDTH = 22
+    LANE_WIDTH = 30             # = 3 sub-lane × 10px mỗi cái
+
+    # Khoảng cách theo xe (following distance)
+    CAR_FOLLOW_DIST = 20
+    MOTO_FOLLOW_DIST = 6
 
     # Thời gian đèn
     GREEN_TIME = 15
@@ -36,11 +40,16 @@ class Config:
     SPAWN_RATE = 0.015          # xác suất spawn mỗi frame (mỗi làn)
     MAX_VEHICLES = 300
 
-    # Vật lý
-    MAX_SPEED = 3.0
-    ACCEL = 0.15
-    DECEL = 0.25
+    # Vật lý – ô tô
+    CAR_MAX_SPEED = 2.8
+    CAR_ACCEL = 0.04            # tăng tốc chậm
+    CAR_DECEL = 0.18
     CAR_SIZE = (24, 12)         # (dài, rộng)
+
+    # Vật lý – xe máy
+    MOTO_MAX_SPEED = 3.5
+    MOTO_ACCEL = 0.14           # tăng tốc nhanh hơn
+    MOTO_DECEL = 0.28
     MOTO_SIZE = (16, 8)         # (dài, rộng)
 
 

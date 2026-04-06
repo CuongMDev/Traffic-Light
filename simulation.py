@@ -46,9 +46,16 @@ class Simulation:
 
         d = random.choice(list(Direction))
         v_type = 'car' if random.random() < 0.3 else 'moto'
-        size = Config.CAR_SIZE if v_type == 'car' else Config.MOTO_SIZE
-        color = COLORS['CAR'] if v_type == 'car' else COLORS['MOTO']
-        offset = Config.LANE_WIDTH // 3
+        if v_type == 'car':
+            size, color = Config.CAR_SIZE, COLORS['CAR']
+            max_speed, accel, decel = Config.CAR_MAX_SPEED, Config.CAR_ACCEL, Config.CAR_DECEL
+            follow_dist = Config.CAR_FOLLOW_DIST
+            sub_lane = -1   # ô tô chiếm cả làn
+        else:
+            size, color = Config.MOTO_SIZE, COLORS['MOTO']
+            max_speed, accel, decel = Config.MOTO_MAX_SPEED, Config.MOTO_ACCEL, Config.MOTO_DECEL
+            follow_dist = Config.MOTO_FOLLOW_DIST
+            sub_lane = random.randrange(3)  # chọn 1 trong 3 sub-lane
 
         # Xe dọc → rect đứng; xe ngang → rect nằm ngang
         if d in (Direction.NORTH, Direction.SOUTH):
@@ -56,24 +63,48 @@ class Simulation:
         else:
             w, h = size[0], size[1]
 
+        lw = Config.LANE_WIDTH
+        sl_w = lw // 3   # = 10px mỗi sub-lane
+
+        # Tính vị trí ngang (lateral) trong làn dựa vào sub_lane
+        # Kích thước vuông góc với hướng di chuyển:
+        #   N/S: di dọc → lateral là trục X → dùng rect.width = w (= size[1])
+        #   E/W: di ngang → lateral là trục Y → dùng rect.height = h (= size[1])
+        lat_size = w if d in (Direction.NORTH, Direction.SOUTH) else h
+        if sub_lane == -1:
+            lat = lw // 2 - lat_size // 2   # offset từ mép làn đến cạnh rect
+        else:
+            lat = sub_lane * sl_w + (sl_w - lat_size) // 2
+
         if d == Direction.NORTH:
             col = random.randrange(Config.GRID_COLS)
             cx = self._col_cx(col)
-            r = pygame.Rect(cx - offset - w, HEIGHT + 5, w, h)
+            # Làn NORTH: bên trái tâm, từ [cx - lw] đến [cx]
+            lane_base = cx - lw
+            r = pygame.Rect(lane_base + lat, HEIGHT + 5, w, h)
         elif d == Direction.SOUTH:
             col = random.randrange(Config.GRID_COLS)
             cx = self._col_cx(col)
-            r = pygame.Rect(cx + offset, -h - 5, w, h)
+            # Làn SOUTH: bên phải tâm, từ [cx] đến [cx + lw]
+            lane_base = cx
+            r = pygame.Rect(lane_base + lat, -h - 5, w, h)
         elif d == Direction.EAST:
             row = random.randrange(Config.GRID_ROWS)
             cy = self._row_cy(row)
-            r = pygame.Rect(-w - 5, cy + offset, w, h)
+            # Làn EAST: bên dưới tâm, từ [cy] đến [cy + lw]
+            lane_base = cy
+            r = pygame.Rect(-w - 5, lane_base + lat, w, h)
         else:  # WEST
             row = random.randrange(Config.GRID_ROWS)
             cy = self._row_cy(row)
-            r = pygame.Rect(SIM_WIDTH + 5, cy - offset - h, w, h)
+            # Làn WEST: bên trên tâm, từ [cy - lw] đến [cy]
+            lane_base = cy - lw
+            r = pygame.Rect(SIM_WIDTH + 5, lane_base + lat, w, h)
 
-        self.vehicles.append(Vehicle(r, d, v_type, color=color))
+        self.vehicles.append(Vehicle(r, d, v_type,
+                                     max_speed=max_speed, accel=accel, decel=decel,
+                                     sub_lane=sub_lane, follow_dist=follow_dist,
+                                     lane_base=lane_base, color=color))
 
     # ------------------------------------------------------------------
     def update(self, dt: float):
